@@ -1,0 +1,1 @@
+cmd_/home/zhuwu/abc123/helloworld/helloworld.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/zhuwu/abc123/helloworld/helloworld.ko /home/zhuwu/abc123/helloworld/helloworld.o /home/zhuwu/abc123/helloworld/helloworld.mod.o
