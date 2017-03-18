@@ -3,9 +3,12 @@
 #include <linux/module.h>
 MODULE_LICENSE("GPL");
 
+static char *name = "A0134429E";
+module_param(name, charp, S_IRUGO);
+
 static int hello_init(void)
 {
-  printk(KERN_ALERT "Hello, world\n");
+  printk(KERN_ALERT "Hello, %s\n", name);
   return 0;
 }
 
