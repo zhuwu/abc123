@@ -73,7 +73,7 @@ ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t 
       return 1;
     } else {
       printk(KERN_INFO "Received more than 1 byte.%d\n", count);
-      return -EFAULT;
+      return -ENOSPC;
     }
   } else {
     printk(KERN_INFO "Failed to receive char.\n");
