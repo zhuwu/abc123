@@ -1,0 +1,1 @@
+cmd_/home/zhuwu/abc123/device/chardevice.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/zhuwu/abc123/device/chardevice.ko /home/zhuwu/abc123/device/chardevice.o /home/zhuwu/abc123/device/chardevice.mod.o
