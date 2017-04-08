@@ -141,18 +141,19 @@ int fourm_release(struct inode *inode, struct file *filep)
 
 ssize_t fourm_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 {
-  printk(KERN_INFO "pos ^^^ %d", *f_pos);
+  printk(KERN_INFO "read pos: %d. count: %d\n", *f_pos, count);
   if (*f_pos >= data_size) {
     printk(KERN_INFO "End of output.\n");
     return 0;
   }
   int error_count = 0;
-  error_count = copy_to_user(buf, fourm_data, data_size);
+  int copy_size = (data_size > count) ? count : data_size;
+  error_count = copy_to_user(buf, fourm_data, copy_size);
   if (error_count == 0) {
     printk(KERN_INFO "Sent data.\n");
-    (*f_pos) += data_size;
+    (*f_pos) += copy_size;
     printk(KERN_INFO "pos --- %d\n", *f_pos);
-    return data_size;
+    return copy_size;
   } else {
     printk(KERN_INFO "Failed to send data.\n");
     return -EFAULT;
@@ -161,18 +162,19 @@ ssize_t fourm_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 
 ssize_t fourm_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
 {
+  printk(KERN_INFO "write pos: %d. count: %d\n", *f_pos, count);
+  if (*f_pos >= LIMIT) {
+    printk(KERN_INFO "End of input.\n");
+    return -ENOSPC;
+  }
   int error_count = 0;
   int copy_size = (count <= LIMIT ? count : LIMIT);
   error_count = copy_from_user(fourm_data, buf, copy_size);
   data_size = copy_size;
   if (error_count == 0) {
-    if (count <= LIMIT) {
-      printk(KERN_INFO "Received char. %d\n", copy_size);
-      return count;
-    } else {
-      printk(KERN_INFO "Received more than limit.%d\n", count);
-      return -ENOSPC;
-    }
+    printk(KERN_INFO "Received char. %d\n", copy_size);
+    (*f_pos) += copy_size;
+    return copy_size;
   } else {
     printk(KERN_INFO "Failed to receive char.\n");
     return -EFAULT;
@@ -224,11 +226,11 @@ static void fourm_exit(void)
   }
   if (dev_msg) {
     kfree(dev_msg);
-    fourm_data = NULL;
+    dev_msg = NULL;
   }
   if (temp_msg) {
     kfree(temp_msg);
-    fourm_data = NULL;
+    temp_msg = NULL;
   }
   // unregister the device
   unregister_chrdev(MAJOR_NUMBER, "fourm");
