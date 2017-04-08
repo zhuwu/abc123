@@ -148,7 +148,7 @@ ssize_t fourm_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
   }
   int error_count = 0;
   int copy_size = (data_size > count) ? count : data_size;
-  error_count = copy_to_user(buf, fourm_data, copy_size);
+  error_count = copy_to_user(buf, fourm_data + *f_pos, copy_size);
   if (error_count == 0) {
     printk(KERN_INFO "Sent data.\n");
     (*f_pos) += copy_size;
