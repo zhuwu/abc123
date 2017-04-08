@@ -16,18 +16,42 @@ int fourm_release(struct inode *inode, struct file *filep);
 ssize_t fourm_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
 ssize_t fourm_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
 static void fourm_exit(void);
+loff_t fourm_llseek(struct file *filep, loff_t off, int whence);
 
 /* definition of file_operation structure */
 struct file_operations fourm_fops = {
   read: fourm_read,
   write: fourm_write,
   open: fourm_open,
-  release: fourm_release
+  release: fourm_release,
+  llseek: fourm_llseek
 };
 
 char *fourm_data = NULL;
 int data_size = 0;
-int LIMIT = 4000000;
+// int LIMIT = 10;
+int LIMIT = 4194304;
+
+loff_t fourm_llseek(struct file *filep, loff_t off, int whence)
+{
+  loff_t new_pos;
+  switch(whence) {
+    case 0: /* SEEK_SET */
+      new_pos = off;
+      break;
+    case 1: /* SEEK_CUR */
+      new_pos = filep->f_pos + off;
+      break;
+    case 2: /* SEEK_END */
+      new_pos = data_size + off;
+      break;
+    default: /* Can't happen */
+      return -EINVAL;
+  }
+  if (new_pos < 0) return -EINVAL;
+  filep->f_pos = new_pos;
+  return new_pos;
+}
 
 int fourm_open(struct inode *inode, struct file *filep)
 {
@@ -68,7 +92,7 @@ ssize_t fourm_write(struct file *filep, const char *buf, size_t count, loff_t *f
   if (error_count == 0) {
     if (count <= LIMIT) {
       printk(KERN_INFO "Received char. %d\n", copy_size);
-      return LIMIT;
+      return count;
     } else {
       printk(KERN_INFO "Received more than limit.%d\n", count);
       return -ENOSPC;
