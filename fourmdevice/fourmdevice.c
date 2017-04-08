@@ -11,35 +11,35 @@
 #define MAJOR_NUMBER 61
 
 /* forward declaration */
-int onebyte_open(struct inode *inode, struct file *filep);
-int onebyte_release(struct inode *inode, struct file *filep);
-ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
-ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
-static void onebyte_exit(void);
+int fourm_open(struct inode *inode, struct file *filep);
+int fourm_release(struct inode *inode, struct file *filep);
+ssize_t fourm_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
+ssize_t fourm_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
+static void fourm_exit(void);
 
 /* definition of file_operation structure */
-struct file_operations onebyte_fops = {
-  read: onebyte_read,
-  write: onebyte_write,
-  open: onebyte_open,
-  release: onebyte_release
+struct file_operations fourm_fops = {
+  read: fourm_read,
+  write: fourm_write,
+  open: fourm_open,
+  release: fourm_release
 };
 
-char *onebyte_data = NULL;
+char *fourm_data = NULL;
 int data_size = 0;
 int LIMIT = 4000000;
 
-int onebyte_open(struct inode *inode, struct file *filep)
+int fourm_open(struct inode *inode, struct file *filep)
 {
   return 0; // always successful
 }
 
-int onebyte_release(struct inode *inode, struct file *filep)
+int fourm_release(struct inode *inode, struct file *filep)
 {
   return 0; // always successful
 }
 
-ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
+ssize_t fourm_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 {
   printk(KERN_INFO "pos ^^^ %d", *f_pos);
   if (*f_pos >= data_size) {
@@ -47,7 +47,7 @@ ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
     return 0;
   }
   int error_count = 0;
-  error_count = copy_to_user(buf, onebyte_data, data_size);
+  error_count = copy_to_user(buf, fourm_data, data_size);
   if (error_count == 0) {
     printk(KERN_INFO "Sent data.\n");
     (*f_pos) += data_size;
@@ -59,11 +59,11 @@ ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
   }
 }
 
-ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
+ssize_t fourm_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
 {
   int error_count = 0;
   int copy_size = (count <= LIMIT ? count : LIMIT);
-  error_count = copy_from_user(onebyte_data, buf, copy_size);
+  error_count = copy_from_user(fourm_data, buf, copy_size);
   data_size = copy_size;
   if (error_count == 0) {
     if (count <= LIMIT) {
@@ -79,11 +79,11 @@ ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t 
   }
 }
 
-static int onebyte_init(void)
+static int fourm_init(void)
 {
   int result;
   // register the device
-  result = register_chrdev(MAJOR_NUMBER, "onebyte", &onebyte_fops);
+  result = register_chrdev(MAJOR_NUMBER, "fourm", &fourm_fops);
   if (result < 0) {
     return result;
   }
@@ -91,33 +91,33 @@ static int onebyte_init(void)
   // kmalloc is just like malloc, the second parameter is
   // the type of memory to be allocated.
   // To release the memory allocated by kmalloc, use kfree.
-  onebyte_data = kmalloc(LIMIT * sizeof(char), GFP_KERNEL);
-  if (!onebyte_data) {
-    onebyte_exit();
+  fourm_data = kmalloc(LIMIT * sizeof(char), GFP_KERNEL);
+  if (!fourm_data) {
+    fourm_exit();
     // cannot allocate memory
     // return no memory error, negative signify a failure
     return -ENOMEM;
   }
   // initialize the value to be X
-  // *onebyte_data = 'X';
-  printk(KERN_ALERT "This is a onebyte device module\n");
+  // *fourm_data = 'X';
+  printk(KERN_ALERT "This is a fourm device module\n");
   return 0;
 }
 
-static void onebyte_exit(void)
+static void fourm_exit(void)
 {
   // if the pointer is pointing to something
-  if (onebyte_data) {
+  if (fourm_data) {
   // free the memory and assign the pointer to NULL
-    kfree(onebyte_data);
-    onebyte_data = NULL;
+    kfree(fourm_data);
+    fourm_data = NULL;
   }
   // unregister the device
-  unregister_chrdev(MAJOR_NUMBER, "onebyte");
+  unregister_chrdev(MAJOR_NUMBER, "fourm");
   printk(KERN_ALERT "Onebyte device module is unloaded\n");
 }
 
 MODULE_LICENSE("GPL");
-module_init(onebyte_init);
-module_exit(onebyte_exit);
+module_init(fourm_init);
+module_exit(fourm_exit);
 
