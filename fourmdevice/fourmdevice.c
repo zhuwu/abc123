@@ -8,10 +8,13 @@
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 #include <linux/ioctl.h>
+#include <linux/string.h>
 
 #define MAJOR_NUMBER 61
 #define SCULL_IOC_MAGIC 'k'
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
+#define SCULL_MSG_WRITE _IOW(SCULL_IOC_MAGIC, 2, int)
+#define SCULL_MSG_READ _IOR(SCULL_IOC_MAGIC, 3, int)
 #define SCULL_IOC_MAXNR 14
 
 /* forward declaration */
@@ -37,6 +40,8 @@ char *fourm_data = NULL;
 int data_size = 0;
 // int LIMIT = 10;
 int LIMIT = 4194304;
+char ioctl_msg[1024] = {'\0'};
+int ioctl_msg_length = 0;
 
 long fourm_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 {
@@ -64,6 +69,15 @@ long fourm_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
   switch(cmd) {
     case SCULL_HELLO:
       printk(KERN_WARNING "hello\n");
+      break;
+    case SCULL_MSG_WRITE:
+      printk(KERN_WARNING "MSG write %d\n", arg);
+      ioctl_msg_length = strlen((char __user *) arg);
+      retval = copy_from_user(ioctl_msg, (char __user *) arg, ioctl_msg_length);
+      break;
+    case SCULL_MSG_READ:
+      printk(KERN_WARNING "MSG read %d\n", arg);
+      retval = copy_to_user((char __user *) arg, ioctl_msg, ioctl_msg_length);
       break;
     default:  /* redundant, as cmd was checked against MAXNR */
       return -ENOTTY;
