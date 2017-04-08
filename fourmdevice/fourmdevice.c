@@ -16,6 +16,7 @@
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
 #define SCULL_MSG_WRITE _IOW(SCULL_IOC_MAGIC, 2, int)
 #define SCULL_MSG_READ _IOR(SCULL_IOC_MAGIC, 3, int)
+#define SCULL_MSG_READ_WRITE _IOWR(SCULL_IOC_MAGIC, 4, int)
 #define SCULL_IOC_MAXNR 14
 #define DEV_MSG_LIMIT 1024
 
@@ -40,8 +41,10 @@ struct file_operations fourm_fops = {
 
 char *fourm_data = NULL;
 int data_size = 0;
-char dev_msg[DEV_MSG_LIMIT] = {'\0'};
-int dev_msg_length = 0;
+char *dev_msg = NULL;
+int dev_msg_size = 0;
+char *temp_msg = NULL;
+int temp_msg_size = 0;
 
 long fourm_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 {
@@ -72,12 +75,32 @@ long fourm_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
       break;
     case SCULL_MSG_WRITE:
       printk(KERN_WARNING "MSG write %d\n", arg);
-      dev_msg_length = strlen((char __user *) arg);
-      retval = copy_from_user(dev_msg, (char __user *) arg, dev_msg_length);
+      memset(dev_msg, '\0', DEV_MSG_LIMIT);
+      dev_msg_size = strlen((char __user *) arg);
+      retval = copy_from_user(dev_msg, (char __user *) arg, dev_msg_size);
       break;
     case SCULL_MSG_READ:
       printk(KERN_WARNING "MSG read %d\n", arg);
-      retval = copy_to_user((char __user *) arg, dev_msg, dev_msg_length);
+      retval = copy_to_user((char __user *) arg, dev_msg, dev_msg_size);
+      break;
+    case SCULL_MSG_READ_WRITE:
+      printk(KERN_WARNING "MSG read write %d\n", arg);
+      memset(temp_msg, '\0', DEV_MSG_LIMIT);
+      temp_msg_size = dev_msg_size;
+      strncpy(temp_msg, dev_msg, dev_msg_size);
+
+      dev_msg_size = strlen((char __user *) arg);
+      memset(dev_msg, '\0', DEV_MSG_LIMIT);
+      int copy_from_user_result = copy_from_user(dev_msg, (char __user *) arg, dev_msg_size);
+
+      if (copy_from_user_result == 0) {
+        retval = copy_to_user((char __user *) arg, temp_msg, temp_msg_size);
+        printk(KERN_WARNING "lalala%d\n", retval);
+      } else {
+        retval = copy_from_user_result;
+      }
+
+      printk(KERN_WARNING "%s", dev_msg);
       break;
     default:  /* redundant, as cmd was checked against MAXNR */
       return -ENOTTY;
@@ -175,6 +198,16 @@ static int fourm_init(void)
     // return no memory error, negative signify a failure
     return -ENOMEM;
   }
+  dev_msg = kmalloc(DEV_MSG_LIMIT * sizeof(char), GFP_KERNEL);
+  if (!dev_msg) {
+    fourm_exit();
+    return -ENOMEM;
+  }
+  temp_msg = kmalloc(DEV_MSG_LIMIT * sizeof(char), GFP_KERNEL);
+  if (!temp_msg) {
+    fourm_exit();
+    return -ENOMEM;
+  }
   // initialize the value to be X
   // *fourm_data = 'X';
   printk(KERN_ALERT "This is a fourm device module\n");
@@ -187,6 +220,14 @@ static void fourm_exit(void)
   if (fourm_data) {
   // free the memory and assign the pointer to NULL
     kfree(fourm_data);
+    fourm_data = NULL;
+  }
+  if (dev_msg) {
+    kfree(dev_msg);
+    fourm_data = NULL;
+  }
+  if (temp_msg) {
+    kfree(temp_msg);
     fourm_data = NULL;
   }
   // unregister the device
