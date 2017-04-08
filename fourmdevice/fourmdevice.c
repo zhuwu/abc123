@@ -11,11 +11,13 @@
 #include <linux/string.h>
 
 #define MAJOR_NUMBER 61
+#define LIMIT 4194304
 #define SCULL_IOC_MAGIC 'k'
 #define SCULL_HELLO _IO(SCULL_IOC_MAGIC, 1)
 #define SCULL_MSG_WRITE _IOW(SCULL_IOC_MAGIC, 2, int)
 #define SCULL_MSG_READ _IOR(SCULL_IOC_MAGIC, 3, int)
 #define SCULL_IOC_MAXNR 14
+#define DEV_MSG_LIMIT 1024
 
 /* forward declaration */
 int fourm_open(struct inode *inode, struct file *filep);
@@ -38,10 +40,8 @@ struct file_operations fourm_fops = {
 
 char *fourm_data = NULL;
 int data_size = 0;
-// int LIMIT = 10;
-int LIMIT = 4194304;
-char ioctl_msg[1024] = {'\0'};
-int ioctl_msg_length = 0;
+char dev_msg[DEV_MSG_LIMIT] = {'\0'};
+int dev_msg_length = 0;
 
 long fourm_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 {
@@ -72,12 +72,12 @@ long fourm_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
       break;
     case SCULL_MSG_WRITE:
       printk(KERN_WARNING "MSG write %d\n", arg);
-      ioctl_msg_length = strlen((char __user *) arg);
-      retval = copy_from_user(ioctl_msg, (char __user *) arg, ioctl_msg_length);
+      dev_msg_length = strlen((char __user *) arg);
+      retval = copy_from_user(dev_msg, (char __user *) arg, dev_msg_length);
       break;
     case SCULL_MSG_READ:
       printk(KERN_WARNING "MSG read %d\n", arg);
-      retval = copy_to_user((char __user *) arg, ioctl_msg, ioctl_msg_length);
+      retval = copy_to_user((char __user *) arg, dev_msg, dev_msg_length);
       break;
     default:  /* redundant, as cmd was checked against MAXNR */
       return -ENOTTY;
