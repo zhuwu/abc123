@@ -168,9 +168,9 @@ ssize_t fourm_write(struct file *filep, const char *buf, size_t count, loff_t *f
     return -ENOSPC;
   }
   int error_count = 0;
-  int copy_size = (count <= LIMIT ? count : LIMIT);
-  error_count = copy_from_user(fourm_data, buf, copy_size);
-  data_size = copy_size;
+  int copy_size = (count + data_size <= LIMIT ? count : LIMIT - data_size);
+  error_count = copy_from_user(fourm_data + *f_pos, buf, copy_size);
+  data_size += copy_size;
   if (error_count == 0) {
     printk(KERN_INFO "Received char. %d\n", copy_size);
     (*f_pos) += copy_size;
