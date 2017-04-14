@@ -163,6 +163,9 @@ ssize_t fourm_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 ssize_t fourm_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
 {
   printk(KERN_INFO "write pos: %d. count: %d\n", *f_pos, count);
+  if (*f_pos == 0) {
+    data_size = 0;
+  }
   if (*f_pos >= LIMIT) {
     printk(KERN_INFO "End of input.\n");
     return -ENOSPC;
